@@ -91,26 +91,32 @@
         collision(other) {
             let collisionAngle = getAngle(this.position.x - other.position.x, this.position.y - other.position.y);
             let collisionArrange = this.radius + other.radius - getDistance(this.position, other.position);
-            // faze os circulos n se encostarem pra n ter repetição do cálculo
             this.position.x -= Math.cos(collisionAngle) * collisionArrange / 2;
             this.position.y += Math.sin(collisionAngle) * collisionArrange / 2;
             other.position.x += Math.cos(collisionAngle) * collisionArrange / 2;
             other.position.y -= Math.sin(collisionAngle) * collisionArrange / 2;
-            // normalização do ângulo pra facilita o cálculo
             let thisNewAngle = this.velocity.angle - collisionAngle;
             let otherNewAngle = other.velocity.angle - collisionAngle;
-            // troca dos eixos dos xizes (basicamente o cálculo da colização)
-            let thisxy = {x: Math.cos(otherNewAngle) * other.velocity.force, y: Math.sin(thisNewAngle) * this.velocity.force};
-            let otherxy = {x: Math.cos(thisNewAngle) * this.velocity.force, y: Math.sin(otherNewAngle) * other.velocity.force};
-            // cálculo da nova força (velocidade)
+            let sumOfMasses = this.mass + other.mass;
+            let thisxy = {
+                x: ((this.mass - other.mass) * Math.cos(thisNewAngle) * this.velocity.force +
+                2 * other.mass * Math.cos(otherNewAngle) * other.velocity.force) / sumOfMasses,
+                y: Math.sin(thisNewAngle) * this.velocity.force
+            };
+            let otherxy = {
+                x: ((other.mass - this.mass) * Math.cos(otherNewAngle) * other.velocity.force +
+                2 * this.mass * Math.cos(thisNewAngle) * this.velocity.force) / sumOfMasses, 
+                y: Math.sin(otherNewAngle) * other.velocity.force
+            };
             this.velocity.force = Math.sqrt(thisxy.x * thisxy.x + thisxy.y * thisxy.y);
             other.velocity.force = Math.sqrt(otherxy.x * otherxy.x + otherxy.y * otherxy.y);
-            // cálculo do novo ângulo + a desnormalização
             this.velocity.angle = getAngle(-thisxy.x, thisxy.y) + collisionAngle;
             other.velocity.angle = getAngle(-otherxy.x, otherxy.y) + collisionAngle;
         }
         draw() {
             Art.circle(this.position.x, this.position.y, this.radius, this.color);
+            Art.write((this.mass).toFixed(2), this.position.x, this.position.y, "white");
+            Art.write((this.velocity.force).toFixed(2), this.position.x, this.position.y + 30, "black");
         }
     }
 
@@ -121,11 +127,20 @@
         let green = Math.round(Math.random() * 223 + 32);
         let blue = Math.round(Math.random() * 223 + 32);
         let color = "#" + red.toString(16) + green.toString(16) + blue.toString(16);
-        circles.push(new Circle(1, Math.round(cnv.width * cnv.height / (Math.sqrt(cnv.width * cnv.height) * 50)), Math.random() * cnv.width, Math.random() * cnv.height, Math.round(cnv.width * cnv.height / (Math.sqrt(cnv.width * cnv.height) * 150)), Math.random() * Math.PI * 2, color));
+        let mass = Math.random() * 3 + 2;
+        circles.push(new Circle(
+            mass,
+            mass * 10,
+            Math.random() * cnv.width,
+            Math.random() * cnv.height,
+            Math.random() * 20,
+            Math.random() * Math.PI * 2,
+            color
+            ));
     }
 
     (function main() {
-        Art.rectangle(0, 0, cnv.width, cnv.height, "black");
+        Art.rectangle(0, 0, cnv.width, cnv.height, "gray");
         for (index in circles)
             circles[index].update();
         requestAnimationFrame(main);
